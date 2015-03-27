@@ -74,21 +74,23 @@ Once you have these two objects setup you can then use the `MyStorableObjectStor
 your model objects to/from SQLite.
 
 ```java
-        MyStorableObject record = new MyStorableObject();
-        
-        // setup your record object
-        
-        // get hold of the store passing your application/activity context
-        MyStorableObjectStore store = new MyStorableObjectStore(context);
 
-        // save your record
-        store.save(MyStorableObject.class, record);
-        long recordId = record.getId();
-        
-        ...
-        
-        // get your object back later
-        MyStorableObject savedResult = store.get(MyStorableObject.class, recordId);
+MyStorableObject record = new MyStorableObject();
+
+// setup your record object
+
+// get hold of the store passing your application/activity context
+MyStorableObjectStore store = new MyStorableObjectStore(context);
+
+// save your record
+store.save(MyStorableObject.class, record);
+long recordId = record.getId();
+
+...
+
+// get your object back later
+MyStorableObject savedResult = store.get(MyStorableObject.class, recordId);
+
 ```
 
 

@@ -1,1 +1,158 @@
-Storme
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Storme</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ultra simple object storage library for Android and SQLite">
+    <link href="http://fonts.googleapis.com/css?family=Roboto:regular,medium,thin,italic,mediumitalic,bold" rel="stylesheet" title="roboto">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/prettify.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row">
+            <h1>Storme</h1>
+            <p class="lead">Storme is a very simple library intended to be used in Android projects where you just
+            need to quickly store some data to a SQL table whilst still being able to use some of
+            the more powerful features of SQL to find and return lists of objects.</p>
+            <p>This library is a simple extension of the <code>SQLiteOpenHelper</code> but it allows you
+            to do away with all the boiler plate code you usually have to write to save and return
+            java objects to/from a SQLite DB.</p>
+            <p>This library is <strong>not</strong> intended to replace any of the existing ORM libraries
+            that are available such as <a href="http://satyan.github.io/sugar/">SugarORM</a>,
+            <a href="http://www.rushorm.com/">RushORM</a> or <a href="http://www.activeandroid.com/">ActiveAndroid</a>.
+            If you need a fully featured ORM capable of storing objects in a complex relational object
+            graph then this is not the library for you.</p>
+            <p>If however, you just need to store a simple object into a table quickly and easily with
+            a minimum amount of code then Storme should work out for you.</p>
+            <p>One of the primary reason for the existance of Storme is the
+            ease with which it can be tested within your Android application. In particular Storme has
+            been verified to work with the <a href="http://robolectric.org">Robolectric test framework</a>.</p>
+            <p>
+                Some of Storme's primary goals are:
+                <ul>
+                    <li>Eliminate all boilerplate required to setup tables</li>
+                    <li>No more reading/writing objects to/from DB cursors</li>
+                    <li>Allow powerful standard SQL queries to still be performed</li>
+                    <li>Ensure that storage code can always be unit tested as simply as possible</li>
+                </ul>
+            </p>
+            <p>Storme also currently does <strong>NOT</strong> handle DB updates. If you need to change
+            the version number of your database due to columns changing then when Storme does the upgrade
+            you <strong>WILL</strong> lose any existing data as it simply drops the existing tables.</p>
+
+            <section>
+                <h2>Installation</h2>
+                <p>To install Storme in your project just download the latest release, extract and copy
+                the <code>storme-x.y.z.jar</code> file into your libs directory. (I mentioned it was simple right)</p>
+            </section>
+            <section>
+                <h2>Usage</h2>
+                <p>
+                    You'll need to create at least two classes to use Storme:
+                    <ul>
+                        <li>A model object extending <code>StormeBaseModel</code></li>
+                        <li>A store/DAO object extending <code>StormeBaseHelper</code></li>
+                    </ul>
+                </p>
+
+                <h3>Model objects</h3>
+                <p>You model object should extend <code>StormBaseModel</code> and should contain the fields
+                    you want to store as columns in your DB table. Currently Storme supports the types
+                    <code>int, long, float, double, boolean, Date and String</code>. By default Storme
+                    will store all fields defined in your model object, if you don't want to store them,
+                    then you can annotate the field with the <code>@StormeFieldIgnore</code> annotation.
+                </p>
+        <div class="highlight highlight-java">
+    <pre class="prettyprint"><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyStorableObject</span> <span class="pl-k">extends</span> <span class="pl-e">StormeBaseModel</span> {
+
+        <span class="pl-k">private</span> <span class="pl-k">int</span> integerField;
+        <span class="pl-k">private</span> <span class="pl-k">long</span> longField;
+        <span class="pl-k">private</span> <span class="pl-k">float</span> floatField;
+        <span class="pl-k">private</span> <span class="pl-k">double</span> doubleField;
+        <span class="pl-k">private</span> <span class="pl-k">boolean</span> booleanField;
+        <span class="pl-k">private</span> <span class="pl-smi">Date</span> dateField;
+        <span class="pl-k">private</span> <span class="pl-smi">String</span> stringField;
+
+        <span>@StormeFieldIgnore</span>
+        <span class="pl-k">private</span> <span class="pl-smi">String</span> ignoreThisField;
+    }
+    </pre></div>
+                <div class="bs-callout bs-callout-warning">
+                    Don't create a field called id, Storme will do that for you as well as creating a <code>createdDate</code> and <code>modifiedDate</code> column.
+                </div>
+
+                <h3>Helper object</h3>
+                <p>Next create your helper object which should simply extend <code>StormeBaseHelper</code></p>
+                <div class="highlight highlight-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyStorableObjectStore</span> <span class="pl-k">extends</span> <span class="pl-e">StormeBaseHelper</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">DATABASE_NAME</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>my_records<span class="pl-pds">"</span></span>;
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">TABLE_PREFIX</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>storme_<span class="pl-pds">"</span></span>;
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-k">int</span> <span class="pl-c1">DATABASE_VERSION</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">List&lt;<span class="pl-k">Class&lt;? extends <span class="pl-smi">StormeModel</span>&gt;</span>&gt;</span> <span class="pl-c1">DB_CLASSES</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-k">ArrayList&lt;<span class="pl-k">Class&lt;? extends <span class="pl-smi">StormeModel</span>&gt;</span>&gt;</span>();
+
+    <span class="pl-k">static</span> {
+        <span class="pl-c1">DB_CLASSES</span><span class="pl-k">.</span>add(<span class="pl-smi">MyStorableObject</span><span class="pl-k">.</span>class);
+    }
+
+    <span class="pl-k">public</span> <span class="pl-en">MyStorableObjectStore</span>(<span class="pl-smi">Context</span> <span class="pl-v">context</span>)
+    {
+        <span class="pl-v">super</span>(context, <span class="pl-c1">DATABASE_NAME</span>, <span class="pl-c1">DATABASE_VERSION</span>, <span class="pl-c1">TABLE_PREFIX</span>, <span class="pl-c1">DB_CLASSES</span>);
+    }
+}</pre></div>
+                <p>This is the minimum you need to do to get started with Storme. As you can see the context of your Application or Activity must
+                be passed into the <code>StormeBaseHelper</code> which is more or less the only Android dependency.</p>
+                <p>Now you have a store object you can go ahead and use it to start storing and retrieving
+                your objects from SQLite. <code>StormeBaseHelper</code> contains all the usual methods you'd expect
+                to save, get, find and delete objects. The example below shows a simple store and retrieve</p>
+
+                <div class="highlight highlight-java"><pre><span class="pl-smi">MyStorableObject</span> record <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">MyStorableObject</span>();
+
+<span class="pl-c">// setup your record object</span>
+
+<span class="pl-c">// get hold of the store passing your application/activity context</span>
+<span class="pl-smi">MyStorableObjectStore</span> store <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">MyStorableObjectStore</span>(context);
+
+<span class="pl-c">// save your record</span>
+store<span class="pl-k">.</span>save(<span class="pl-smi">MyStorableObject</span><span class="pl-k">.</span>class, record);
+<span class="pl-k">long</span> recordId <span class="pl-k">=</span> record<span class="pl-k">.</span>getId();
+
+<span class="pl-c1">...</span>
+
+<span class="pl-c">// get your object back later</span>
+<span class="pl-smi">MyStorableObject</span> savedResult <span class="pl-k">=</span> store<span class="pl-k">.</span>get(<span class="pl-smi">MyStorableObject</span><span class="pl-k">.</span>class, recordId);
+</pre></div>
+
+                <p>The <code>StormeBaseHelper</code> also includes a <code>find</code> methods which takes where, order, page and page size parameters
+                to help you quickly get a list of objects from any DB table.</p>
+            </section>
+        </div>
+
+
+
+        <h3 id="license">License</h3>
+            <pre class="license">Copyright 2015 Brett Cherrington
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</pre>
+
+        <a id="ribbon" href="https://github.com/brettwold/Storm"><img src="img/ribbon.png" alt="Fork me on GitHub"></a>
+
+    </div>
+</body>
+
+</html>

@@ -19,13 +19,14 @@ public class SQLiteInstance extends SQLiteOpenHelper {
     public static synchronized SQLiteInstance getInstance(Context context, String dbName, int dbVersion, StormeBaseHelper stormeBaseHelper) {
 
         if (instance == null) {
-            instance = new SQLiteInstance(context.getApplicationContext(), dbName, dbVersion);
+            instance = new SQLiteInstance(context.getApplicationContext(), dbName, dbVersion, stormeBaseHelper);
         }
         return instance;
     }
 
-    private SQLiteInstance(Context context, String dbName, int dbVersion) {
+    private SQLiteInstance(Context context, String dbName, int dbVersion, StormeBaseHelper stormeBaseHelper) {
         super(context, dbName, null, dbVersion);
+        this.stormeBaseHelper = stormeBaseHelper;
     }
 
 

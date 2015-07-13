@@ -17,7 +17,6 @@ package com.storme;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,13 +26,15 @@ import java.util.Map;
 /**
  * Created by brett on 24/02/15.
  */
-public abstract class StormeBaseHelper extends SQLiteOpenHelper {
+public abstract class StormeBaseHelper {
 
-    private SQLiteDatabase mDb;
+    private static SQLiteInstance sqliteInstance;
+
     private Map<Class<? extends StormeModel>, StormeModelFactory> classToFactoryMap;
 
     public StormeBaseHelper(Context context, String dbName, int dbVersion, String tablePrefix, List<Class<? extends StormeModel>> models) {
-        super(context, dbName, null, dbVersion);
+        sqliteInstance = SQLiteInstance.getInstance(context, dbName, dbVersion, this);
+
         classToFactoryMap = new HashMap<Class<? extends StormeModel>, StormeModelFactory>();
         for(Class<? extends StormeModel> model : models) {
             StormeModelFactory factory = new StormeModelFactory(model, tablePrefix, dbVersion);
@@ -41,9 +42,7 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    @Override
-    public void onCreate(SQLiteDatabase database) {
-        mDb = database;
+    public void handleCreate(SQLiteDatabase database) {
         if(database != null && database.isOpen()) {
             for(StormeModelFactory factory : classToFactoryMap.values()) {
                 factory.createTable(database);
@@ -51,13 +50,8 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    @Override
-    public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {
+    public void handleUpgrade(SQLiteDatabase database) {
         // for now just drop everything
-        dropTables(database);
-    }
-
-    private void dropTables(SQLiteDatabase database) {
         if(database != null && database.isOpen()) {
             for(StormeModelFactory factory : classToFactoryMap.values()) {
                 factory.dropTable(database);
@@ -73,13 +67,13 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
             throw new IllegalArgumentException("Attempt to save null model object");
         }
 
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
             if(record.getId() > 0) {
-                factory.update(mDb, record);
+                factory.update(sqliteInstance.getDatabase(), record);
             } else {
-                factory.insert(mDb, record);
+                factory.insert(sqliteInstance.getDatabase(), record);
             }
             return record;
         }
@@ -93,10 +87,10 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         if(id <= 0) {
             throw new IllegalArgumentException("Attempt to get a record with zero or negative id");
         }
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            return (E)factory.get(id, mDb);
+            return (E)factory.get(id, sqliteInstance.getDatabase());
         }
         throw new IllegalArgumentException("Unknown model type passed to get method: " + modelClass.getName());
     }
@@ -106,10 +100,10 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
             throw new IllegalArgumentException("Model class cannot be null");
         }
 
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            List<E> list = factory.find(null, null, order, page, pagesize, mDb);
+            List<E> list = factory.find(null, null, order, page, pagesize, sqliteInstance.getDatabase());
             return new ArrayList<E>(list);
         }
         throw new IllegalArgumentException("Unknown model type passed to getAll method: " + modelClass.getName());
@@ -120,10 +114,10 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
             throw new IllegalArgumentException("Model class cannot be null");
         }
 
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            return factory.find(where, whereParams, order, page, pagesize, mDb);
+            return factory.find(where, whereParams, order, page, pagesize, sqliteInstance.getDatabase());
         }
         throw new IllegalArgumentException("Unknown model type passed to find method: " + modelClass.getName());
     }
@@ -132,10 +126,10 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         if(modelClass == null) {
             throw new IllegalArgumentException("Model class cannot be null");
         }
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            return factory.findCount(mDb);
+            return factory.findCount(sqliteInstance.getDatabase());
         }
         throw new IllegalArgumentException("Unknown model type passed to findCount method: " + modelClass.getName());
     }
@@ -147,10 +141,10 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         if(record.getId() <= 0) {
             throw new IllegalArgumentException("Attempt to delete a record with no id");
         }
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            factory.delete(record, mDb);
+            factory.delete(record, sqliteInstance.getDatabase());
             return;
         }
         throw new IllegalArgumentException("Unknown model type passed to delete method: " + modelClass.getName());
@@ -160,21 +154,13 @@ public abstract class StormeBaseHelper extends SQLiteOpenHelper {
         if(modelClass == null) {
             throw new IllegalArgumentException("Model class cannot be null");
         }
-        openDB();
+        sqliteInstance.openDB();
         StormeModelFactory factory = classToFactoryMap.get(modelClass);
         if(factory != null) {
-            factory.deleteAll(mDb);
+            factory.deleteAll(sqliteInstance.getDatabase());
             return;
         }
         throw new IllegalArgumentException("Unknown model type passed to delete method: " + modelClass.getName());
     }
 
-    private void openDB()
-    {
-        if(mDb == null)
-        {
-            mDb = getWritableDatabase();
-            onCreate(mDb);
-        }
-    }
 }

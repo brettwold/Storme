@@ -54,7 +54,7 @@ public class StormeModelFactory<T extends StormeModel> {
 
     public T get(long id, SQLiteDatabase db)
     {
-        Cursor cursor = db.query(tableName, getSelectColumns(), ReflectionClassTableGenerator.ID_COLUMN_NAME + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
+        Cursor cursor = db.query(tableName, getSelectColumns(), ReflectionClassTableGenerator.ID_COLUMN_NAME + "=?", new String[]{String.valueOf(id)}, null, null, null, null);
         try {
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
@@ -158,6 +158,10 @@ public class StormeModelFactory<T extends StormeModel> {
 
     public void delete(T obj, SQLiteDatabase db) {
         db.delete(tableName, ReflectionClassTableGenerator.ID_COLUMN_NAME + " = ?", new String[] { String.valueOf(obj.getId()) });
+    }
+
+    public void delete(String where, String[] whereParams, SQLiteDatabase db) {
+        db.delete(tableName, where, whereParams);
     }
 
     public void deleteAll(SQLiteDatabase db) {

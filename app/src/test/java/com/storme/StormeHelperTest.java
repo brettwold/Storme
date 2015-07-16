@@ -1,5 +1,6 @@
 package com.storme;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,6 +10,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -25,21 +27,27 @@ import static org.junit.Assert.fail;
 @RunWith(RobolectricTestRunner.class)
 public class StormeHelperTest {
 
+    TestRecordStore store;
+
     @Before
     public void beforeTests() {
         ShadowLog.stream = System.out;
+        store = new TestRecordStore(Robolectric.application);
+    }
+
+    @After
+    public void after() {
+        store.close();
     }
 
     @Test
     public void can_setup_helper() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         assertNotNull(store);
     }
 
     @Test
     public void adding_a_blank_record_is_saved() {
         TestRecord record = new TestRecord();
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         List<TestRecord> records = store.getAll(TestRecord.class, null, 0, 0);
         assertNotNull(records);
@@ -57,7 +65,6 @@ public class StormeHelperTest {
     public void adding_a_populated_record_is_saved() {
         String key = "hdjshasuighubfjbswfjhe";
         TestRecord record = getPopulatedRecord(key, 0);
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         List<TestRecord> records = store.getAll(TestRecord.class, null, 0, 0);
         assertNotNull(records);
@@ -73,7 +80,6 @@ public class StormeHelperTest {
     @Test
     public void deleting_a_record_is_performed() {
         TestRecord record = new TestRecord();
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         List<TestRecord> records = store.getAll(TestRecord.class, null, 0, 0);
         assertNotNull(records);
@@ -89,8 +95,48 @@ public class StormeHelperTest {
     }
 
     @Test
+    public void deleting_with_where_is_performed() {
+        TestRecord record = new TestRecord();
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
+        Date yesterday = cal.getTime();
+
+        try {
+            store.delete(null, "dateField = ?", new String[]{String.valueOf(yesterday.getTime())});
+            fail("Delete with no model should fail");
+        } catch (IllegalArgumentException e) {}
+
+        try {
+            store.delete(TestRecord.class, null, new String[]{String.valueOf(yesterday.getTime())});
+            fail("Delete with no where should fail");
+        } catch (IllegalArgumentException e) {}
+
+        record.setDateField(yesterday);
+        store.save(TestRecord.class, record);
+        record = new TestRecord();
+        record.setDateField(yesterday);
+        store.save(TestRecord.class, record);
+        record = new TestRecord();
+        record.setDateField(new Date());
+        store.save(TestRecord.class, record);
+        record = new TestRecord();
+        record.setDateField(new Date());
+        store.save(TestRecord.class, record);
+        record = new TestRecord();
+        record.setDateField(new Date());
+        store.save(TestRecord.class, record);
+
+        List<TestRecord> records = store.getAll(TestRecord.class, null, 0, 0);
+        assertThat(records.size(), is(5));
+
+        store.delete(TestRecord.class, "dateField = ?", new String[]{String.valueOf(yesterday.getTime())});
+
+        records = store.getAll(TestRecord.class, null, 0, 0);
+        assertThat(records.size(), is(3));
+    }
+
+    @Test
     public void deleting_all_records_is_performed() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         List<TestRecord> records = store.getAll(TestRecord.class, null, 0, 0);
         assertNotNull(records);
@@ -117,7 +163,6 @@ public class StormeHelperTest {
 
     @Test
     public void can_update_record() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         TestRecord record = new TestRecord();
         store.save(TestRecord.class, record);
@@ -141,7 +186,6 @@ public class StormeHelperTest {
     @Test
     public void check_delete_with_no_id_fails() {
         TestRecord record = new TestRecord();
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         assertThat(record.getId(), is(0L));
         try {
@@ -154,7 +198,6 @@ public class StormeHelperTest {
     public void can_find_a_record_by_a_field() {
         String key = "ahjjdshjdhjs123";
         TestRecord record = getPopulatedRecord(key, 0);
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         assertThat(record.getStringField(), is(key));
         assertThat(record.getId(), is(0L));
@@ -171,7 +214,6 @@ public class StormeHelperTest {
     public void can_find_a_record_by_id() {
         String key = "ahjjdshjdhjs123";
         TestRecord record = getPopulatedRecord(key, 0);
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         assertThat(record.getStringField(), is(key));
         assertThat(record.getId(), is(0L));
@@ -187,7 +229,6 @@ public class StormeHelperTest {
 
     @Test
     public void can_get_ordered_results() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         store.deleteAll(TestRecord.class);
 
         TestRecord record1 = getPopulatedRecord("1", 0);
@@ -216,7 +257,6 @@ public class StormeHelperTest {
 
     @Test
     public void count_works_as_expected() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         store.deleteAll(TestRecord.class);
 
         for(int i = 0; i < 10; i++) {
@@ -229,7 +269,6 @@ public class StormeHelperTest {
 
     @Test
     public void paging_works_as_expected() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         store.deleteAll(TestRecord.class);
 
         for(int i = 0; i < 10; i++) {
@@ -260,7 +299,6 @@ public class StormeHelperTest {
 
     @Test
     public void check_valid_failure() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         TestRecord record = store.get(TestRecord.class, 54885);
         assertNull(record);
@@ -268,7 +306,6 @@ public class StormeHelperTest {
 
     @Test
     public void check_upgrade() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
 
         for(int i = 0; i < 10; i++) {
             TestRecord record = getPopulatedRecord(String.valueOf(i + 1), i);
@@ -286,7 +323,6 @@ public class StormeHelperTest {
 
     @Test
     public void check_non_model_class_is_handled() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         try {
             FakeRecord record = store.get(FakeRecord.class, 1);
             fail("Attempting to get an unknown model type should fail");
@@ -324,11 +360,15 @@ public class StormeHelperTest {
             store.deleteAll(FakeRecord.class);
             fail("Attempting to delete all unknown model type should fail");
         } catch (IllegalArgumentException e) {}
+
+        try {
+            store.delete(FakeRecord.class, "cheese = ?", new String[] {"fromage"});
+            fail("Attempting to delete all unknown model type should fail");
+        } catch (IllegalArgumentException e) {}
     }
 
     @Test
     public void check_invalid_params() {
-        TestRecordStore store = new TestRecordStore(Robolectric.application);
         try {
             TestRecord record = store.get(TestRecord.class, 0);
             fail("Attempting to get an model of zero id type should fail");

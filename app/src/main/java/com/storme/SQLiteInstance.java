@@ -18,6 +18,14 @@ public class SQLiteInstance extends SQLiteOpenHelper {
 
     public static synchronized SQLiteInstance getInstance(Context context, String dbName, int dbVersion, StormeBaseHelper stormeBaseHelper) {
 
+        if(instance != null) {
+            SQLiteDatabase database = instance.getDatabase();
+            if(database != null && database.getVersion() != dbVersion) {
+                instance.close();
+                instance = null;
+            }
+        }
+
         if (instance == null) {
             instance = new SQLiteInstance(context.getApplicationContext(), dbName, dbVersion, stormeBaseHelper);
         }

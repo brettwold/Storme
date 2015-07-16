@@ -150,6 +150,22 @@ public abstract class StormeBaseHelper {
         throw new IllegalArgumentException("Unknown model type passed to delete method: " + modelClass.getName());
     }
 
+    protected <E extends StormeModel> void delete(Class<E> modelClass, String where, String[] whereParams) {
+        if(modelClass == null) {
+            throw new IllegalArgumentException("Model class cannot be null");
+        }
+        if(where == null) {
+            throw new IllegalArgumentException("Attempt to delete a record with no where clause");
+        }
+        sqliteInstance.openDB();
+        StormeModelFactory factory = classToFactoryMap.get(modelClass);
+        if(factory != null) {
+            factory.delete(where, whereParams, sqliteInstance.getDatabase());
+            return;
+        }
+        throw new IllegalArgumentException("Unknown model type passed to delete method: " + modelClass.getName());
+    }
+
     protected <E extends StormeModel> void deleteAll(Class<E> modelClass) {
         if(modelClass == null) {
             throw new IllegalArgumentException("Model class cannot be null");
@@ -161,6 +177,10 @@ public abstract class StormeBaseHelper {
             return;
         }
         throw new IllegalArgumentException("Unknown model type passed to delete method: " + modelClass.getName());
+    }
+
+    protected void close() {
+        sqliteInstance.close();
     }
 
 }

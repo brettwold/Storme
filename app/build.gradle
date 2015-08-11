@@ -3,6 +3,7 @@ apply plugin: 'jacoco'
 
 buildscript {
     repositories {
+        jcenter()
         mavenCentral()
     }
 
@@ -80,6 +81,8 @@ android.libraryVariants.all { variant ->
 }
 
 apply plugin: 'org.robolectric'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
@@ -110,4 +113,33 @@ dependencies {
     }
 
     androidTestCompile configurations.testCompile.dependencies
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['Storme']
+    pkg {
+        repo = 'maven'
+        name = 'Storme'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/brettwold/Storme.git'
+        version {
+            name = "${project.version}"
+            desc = 'Storme'
+            released  = new Date()
+            vcsTag = 'v1.2'
+        }
+    }
+}
+
+publishing {
+    publications {
+        Storme(MavenPublication) {
+            groupId 'com.brettwold'
+            artifactId 'storme'
+            version "${project.version}"
+            artifact "${project.buildDir}/outputs/aar/${project.name}-release.aar"
+        }
+    }
 }
